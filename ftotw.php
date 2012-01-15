@@ -50,7 +50,7 @@ class Ftotw {
 
         // Manual run
         if (isset ($_POST['action']) && $_POST['action'] == 'manual-run') {
-//            $this->do_ftotw_fetch_tweet();
+//            $this->do_ftotw_fetch_tweets();
             $this->do_ftotw();
         }
     }
@@ -62,9 +62,12 @@ class Ftotw {
 
         global $wpdb;
         global $ftotw_tweet_table_name;
-        
-        $tweets = $wpdb->get_results("SELECT * FROM $ftotw_tweet_table_name ORDER BY wings DESC");
 
+        $last_tweet_id = get_option('ftotw-last-tweet-id', 0);
+        
+        $tweets = $wpdb->get_results("SELECT * FROM $ftotw_tweet_table_name WHERE id > $last_tweet_id ORDER BY wings DESC");
+        $max_id = $wpdb->get_var($wpdb->prepare("SELECT MAX(id) FROM $ftotw_tweet_table_name"));
+        
         if ($tweets) {
             $options = get_option('ftotw-options');
             // create post
@@ -85,15 +88,15 @@ class Ftotw {
             wp_set_post_terms($post_id, $options['tags']);
             // update running number for post title
             update_option('ftotw_no', $ftotw_no + 1);
-
-            $this->trucate_tweets_table();
+            //update the last tweet id
+            update_option('ftotw-last-tweet-id', $max_id);
         }
     }
 
     /**
      * Fetch the tweets and process them. Should run everyday
      */
-    function do_ftotw_fetch_tweet() {
+    function do_ftotw_fetch_tweets() {
 
         $options = get_option('ftotw-options');
 
@@ -104,8 +107,8 @@ class Ftotw {
 
             $feed_url = $options['twitter-feed'];
             $since_id = get_option('ftotw-since-id', 1);
-            $feed_url .= '?count=10';
-//            $feed_url .= '?count=100&since_id=' . $since_id;
+//            $feed_url .= '?count=10';
+            $feed_url .= '?count=100&since_id=' . $since_id;
 
             $feed = fetch_feed($feed_url);
 
@@ -141,13 +144,13 @@ class Ftotw {
                     }
 
                     // update since id
-//                    $this->update_since_id($tweets);
+                    $this->update_since_id($tweets);
                 } else {
-                    $this->send_email("Zero entries found");
+                    $this->send_email("Zero tweets found. Either there are no tweets available or Twitter could be down. The Plugin will try to retrieve the tweents again. You don't have to do anything.");
                     error_log("Zero entries found");
                 }
             } else {
-                $this->send_email("Error parsing the feed" . var_export($feed, TRUE));
+                $this->send_email("Error parsing the feed. Possible reason is that Twitter could be down. The Plugin will try to retrieve the tweents again. You don't have to do anything. The following is the log information for debugging. " . var_export($feed, TRUE));
                 error_log("Error parsing the feed" . var_export($feed, TRUE));
             }
         }
@@ -199,10 +202,14 @@ class Ftotw {
         foreach ($tweets as $tweet) {
             $tweet_text = $tweet->tweet;
 
+            $helper = new TweetHelper($tweet);
+            $tweet_content = $helper->get_processed_content();
+
 //                $tweet_title = $this->get_tweet_title($tweet->get_title());
-            $tweet_content = $this->process_url($tweet_text);
-            $tweet_content = $this->expand_twitter_name($tweet_content);
-            $tweet_content = $this->add_permalink($tweet_content, 'http://twitter.com/rsukumar/statuses/' . $tweet->tweet_id);
+//            $tweet_content = $this->process_url($tweet_text);
+//            $tweet_content = $this->expand_twitter_name($tweet_content);
+//            $tweet_content = $this->add_permalink($tweet_content, 'http://twitter.com/rsukumar/statuses/' . $tweet->tweet_id);
+
             $post .= <<<EOD
                 <li>
                     <p>{$tweet_content}</p>
@@ -224,75 +231,6 @@ EOD;
     function get_tweet_title($tweet) {
         preg_match('#^rsukumar:.{1,}:\s(.{1,})(http?:[A-Za-z0-9/\.]*).*#ix', $tweet, $matches);
         return trim($matches[1]);
-    }
-    /**
-     * Expand short urls and make them clickable
-     *
-     * @param <type> $content
-     * @return <type>
-     */
-    function process_url($content) {
-        $content = ' ' . $content;
-        $content = preg_replace_callback('#(?<!=[\'"])(?<=[*\')+.,;:!&$\s>])(\()?([\w]+?://(?:[\w\\x80-\\xff\#%~/?@\[\]-]|[\'*(+.,;:!=&$](?![\b\)]|(\))?([\s]|$))|(?(1)\)(?![\s<.,;:]|$)|\)))+)#is', array(&$this, '_expand_url_and_make_url_clickable_cb'), $content);
-        return trim($content);
-    }
-
-    /**
-     * Callback to convert URI match to HTML A element.
-     *
-     * @access private
-     *
-     * @param array $matches Single Regex Match.
-     * @return string HTML A element with URI address.
-     */
-    function _expand_url_and_make_url_clickable_cb($matches) {
-        $url = $matches[2];
-        $suffix = '';
-
-        /** Include parentheses in the URL only if paired **/
-        while ( substr_count( $url, '(' ) < substr_count( $url, ')' ) ) {
-            $suffix = strrchr( $url, ')' ) . $suffix;
-            $url = substr( $url, 0, strrpos( $url, ')' ) );
-        }
-
-        $url = $this->expand_url(esc_url($url));
-        if ( empty($url) )
-            return $matches[0];
-
-        $ftotw_link_no = get_option('ftotw_link_no', 1);
-        update_option('ftotw_link_no', $ftotw_link_no + 1);
-        return $matches[1] . "<a href=\"$url\" >FTOTW Link $ftotw_link_no</a>" . $suffix;
-
-    }
-
-    /**
-     * Get response location of a given URL
-     *
-     * @param <type> $url
-     * @return <type>
-     */
-    function expand_url($url){
-        //Get response headers
-        $response = get_headers($url, 1);
-        //Get the location property of the response header. If failure, show error
-        $location = $response["Location"];
-        if (isset($location)) {
-            if (is_array($location)) {
-                return $location[count($location) - 1];
-            }
-        }
-        return $url;
-    }
-
-    /**
-     * Expand Twitter usernames
-     *
-     * @param <type> $content
-     * @return <type>
-     */
-    function expand_twitter_name($content) {
-        $content = preg_replace("/@(\w+)/", "<a href=\"http://www.twitter.com/\\1\" target=\"_blank\">@\\1</a>", $content);
-        return trim($content);
     }
 
     /**
@@ -394,33 +332,6 @@ EOD;
             ));
         }
     }
-
-    /**
-     * Truncate Tweet table
-     *
-     * @global <type> $wpdb
-     * @global <type> $ftotw_tweet_table_name
-     */
-    function trucate_tweets_table() {
-        global $wpdb;
-        global $ftotw_tweet_table_name;
-
-        $wpdb->query("TRUNCATE $ftotw_tweet_table_name");
-    }
-
-    /**
-     * Add permalink to Tweet
-     *
-     * @param <type> $content
-     * @param <type> $permalink
-     * @return <type>
-     *
-     */
-    function add_permalink($content, $permalink) {
-        $content = preg_replace("/(rsukumar)/", "<a href=\"$permalink\" target=\"_blank\">\\1</a>", $content);
-        return trim($content);
-    }
-
 
     /**
      * Register the settings page
@@ -600,6 +511,7 @@ EOD;
 // Start this plugin once all other plugins are fully loaded
 add_action( 'init', 'Ftotw' ); function Ftotw() { global $Ftotw; $Ftotw = new Ftotw(); }
 
+// On install functions
 function ftotw_on_install() {
 
    global $wpdb;
@@ -638,9 +550,222 @@ function ftotw_on_install() {
       require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
       dbDelta($sql);
    }
+
+    // schedule the daily event as well
+    if ( !wp_next_scheduled( 'do_ftotw_fetch_tweets' ) ) {
+        wp_schedule_event(time(), 'daily', 'do_ftotw_fetch_tweets');
+    }
 }
 
 // When installed
 register_activation_hook(__FILE__, 'ftotw_on_install');
 
+// Helper classes
+
+/**
+ * Tweet Helper class
+ */
+class TweetHelper {
+    public $tweet;
+
+    function __construct ($new_tweet) {
+        $this->tweet = $new_tweet;
+    }
+
+    function get_processed_content() {
+        
+        $tweet_content = $this->process_url($this->tweet->tweet);
+        $tweet_content = $this->expand_twitter_name($tweet_content);
+        $tweet_content = $this->add_permalink($tweet_content, 'http://twitter.com/rsukumar/statuses/' . $this->tweet->tweet_id);
+
+        return $tweet_content;
+    }
+
+    /**
+     * Expand short urls and make them clickable
+     *
+     * @param <type> $content
+     * @return <type>
+     */
+    function process_url($content) {
+        $content = ' ' . $content;
+        $content = preg_replace_callback('#(?<!=[\'"])(?<=[*\')+.,;:!&$\s>])(\()?([\w]+?://(?:[\w\\x80-\\xff\#%~/?@\[\]-]|[\'*(+.,;:!=&$](?![\b\)]|(\))?([\s]|$))|(?(1)\)(?![\s<.,;:]|$)|\)))+)#is', array(&$this, '_expand_url_and_make_url_clickable_cb'), $content);
+        return trim($content);
+    }
+
+    /**
+     * Callback to convert URI match to HTML A element.
+     *
+     * @access private
+     *
+     * @param array $matches Single Regex Match.
+     * @return string HTML A element with URI address.
+     */
+    function _expand_url_and_make_url_clickable_cb($matches) {
+        $url = $matches[2];
+        $suffix = '';
+
+        /** Include parentheses in the URL only if paired **/
+        while ( substr_count( $url, '(' ) < substr_count( $url, ')' ) ) {
+            $suffix = strrchr( $url, ')' ) . $suffix;
+            $url = substr( $url, 0, strrpos( $url, ')' ) );
+        }
+
+        $url = $this->expand_url(esc_url($url));
+        if ( empty($url) )
+            return $matches[0];
+
+        $ftotw_link_no = get_option('ftotw_link_no', 1);
+        update_option('ftotw_link_no', $ftotw_link_no + 1);
+        return $matches[1] . "<a href=\"$url\" >FTOTW Link $ftotw_link_no</a>" . $suffix;
+
+    }
+
+    /**
+     * Get response location of a given URL
+     *
+     * @param <type> $url
+     * @return <type>
+     */
+    function expand_url($url){
+        //Get response headers
+        $response = get_headers($url, 1);
+        //Get the location property of the response header. If failure, show error
+        $location = $response["Location"];
+        if (isset($location)) {
+            if (is_array($location)) {
+                return $location[count($location) - 1];
+            }
+        }
+        return $url;
+    }
+
+    /**
+     * Expand Twitter usernames
+     *
+     * @param <type> $content
+     * @return <type>
+     */
+    function expand_twitter_name($content) {
+        $content = preg_replace("/@(\w+)/", "<a href=\"http://www.twitter.com/\\1\" target=\"_blank\">@\\1</a>", $content);
+        return trim($content);
+    }
+
+    /**
+     * Add permalink to Tweet
+     *
+     * @param <type> $content
+     * @param <type> $permalink
+     * @return <type>
+     *
+     */
+    function add_permalink($content, $permalink) {
+        $content = preg_replace("/(rsukumar)/", "<a href=\"$permalink\" target=\"_blank\">\\1</a>", $content);
+        return trim($content);
+    }
+}
+
+// Template Functions
+
+/**
+ * Template function to display the list of tweets
+ *
+ * @global <type> $wpdb
+ * @global <type> $ftotw_tweet_table_name
+ * @param <type> $wing
+ */
+function fftow_get_timeline($wing = 0) {
+    global $wpdb;
+    global $ftotw_tweet_table_name;
+
+    $timeline = '';
+
+    if ($wing > 0 && $wing <= 4) {
+        $tweets = $wpdb->get_results("SELECT * FROM $ftotw_tweet_table_name WHERE wings = $wing ORDER BY tweet_date DESC");
+    } else {
+        $tweets = $wpdb->get_results("SELECT * FROM $ftotw_tweet_table_name ORDER BY wings DESC, tweet_date DESC");
+    }
+
+    if ($tweets) {
+        $timeline .= <<<EOD
+        <table border = "1">
+            <tr>
+                <th>Author</th>
+                <th>Tweet</th>
+EOD;
+
+        if ($wing > 0 && $wing <= 4) {
+            // nothing
+        } else {
+            $timeline .= '<th>Wing</th>';
+        }
+
+        $timeline .= <<<EOD
+                <th>Date</th>
+            </tr>
+EOD;
+        
+        foreach ($tweets as $tweet) {
+
+            $timeline .= '<tr>';
+            $timeline .= '<td>' . $tweet->twitter_id . '</td>';
+
+            $helper = new TweetHelper($tweet);
+            $tweet_content = $helper->get_processed_content();
+            
+            $timeline .= '<td>' . $tweet_content . '</td>';
+
+            if ($wing > 0 && $wing <= 4) {
+                // nothing
+            } else {
+                $timeline .= '<td>' . $tweet->wings . '</td>';
+            }
+
+            $timeline .= '<td>' . date('d-M-Y', strtotime($tweet->tweet_date)) . '</td>';
+            $timeline .= '</tr>';
+        }
+        
+        $timeline .= '</table>';
+    }
+
+    return $timeline;
+}
+
+/**
+ * Template function to display the leaderboard
+ *
+ * @global <type> $wpdb
+ * @global <type> $ftotw_tweet_table_name
+ * @param <type> $wing
+ */
+function fftow_get_leaderboard() {
+    global $wpdb;
+    global $ftotw_table_name;
+
+    $leaderboard = '';
+
+    $tweeters = $wpdb->get_results("SELECT * FROM $ftotw_table_name ORDER BY wings DESC");
+
+    if ($tweeters) {
+        $leaderboard .= <<<EOD
+        <table border = "1">
+            <tr>
+                <th>Author</th>
+                <th>Wings</th>
+            </tr>
+EOD;
+
+        foreach ($tweeters as $tweeter) {
+
+            $leaderboard .= '<tr>';
+            $leaderboard .= '<td>' . $tweeter->twitter_id . '</td>';
+            $leaderboard .= '<td>' . $tweeter->wings . '</td>';
+            $leaderboard .= '</tr>';
+        }
+
+        $leaderboard .= '</table>';
+    }
+
+    return $leaderboard;
+}
 ?>
