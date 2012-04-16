@@ -611,7 +611,7 @@ class TweetHelper {
             $url = substr( $url, 0, strrpos( $url, ')' ) );
         }
 
-        $url = $this->expand_url(esc_url($url));
+//        $url = $this->expand_url(esc_url($url));
         if ( empty($url) )
             return $matches[0];
 
