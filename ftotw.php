@@ -731,6 +731,46 @@ EOD;
     return $timeline;
 }
 
+/*
+ * Get the fftow river
+ */
+function fftow_get_river($wing = 0) {
+    global $wpdb;
+    global $ftotw_tweet_table_name;
+
+    $river = '';
+    
+    if ($wing > 0 && $wing <= 4) {
+        $tweets = $wpdb->get_results("SELECT * FROM $ftotw_tweet_table_name WHERE wings = $wing ORDER BY tweet_date DESC");
+    } else {
+        $tweets = $wpdb->get_results("SELECT * FROM $ftotw_tweet_table_name ORDER BY wings DESC, tweet_date DESC");
+    }
+
+    if ($tweets) {
+        $current_date = '';
+        
+        foreach ($tweets as $tweet) {
+            $helper = new TweetHelper($tweet);
+            $tweet_content = $helper->get_processed_content();
+
+            if ($current_date != date('F-d, Y', strtotime($tweet->tweet_date))) {
+                $current_date = date('F-d, Y', strtotime($tweet->tweet_date));
+                $river .= '<h2>' . date('F-d, Y', strtotime($tweet->tweet_date)) . '</h2>';
+            }
+
+            $river .=  '<p>';
+
+            $river .= date('G:i:s', strtotime($tweet->tweet_date));
+            $river .= ' <a href = "http://twitter.com/' . $tweet->twitter_id . '">' . $tweet->twitter_id . '</a> ';
+            $river .= ' ' . $tweet_content . ' ';
+            
+            $river .=  '</p>';
+        }
+    }
+
+    return $river;
+
+}
 /**
  * Template function to display the leaderboard
  *
@@ -758,7 +798,7 @@ EOD;
         foreach ($tweeters as $tweeter) {
 
             $leaderboard .= '<tr>';
-            $leaderboard .= '<td>' . $tweeter->twitter_id . '</td>';
+            $leaderboard .= '<td><a href = "http://twitter.com/' . $tweeter->twitter_id . '">' . $tweeter->twitter_id . '</a></td>';
             $leaderboard .= '<td>' . $tweeter->wings . '</td>';
             $leaderboard .= '</tr>';
         }
@@ -767,5 +807,17 @@ EOD;
     }
 
     return $leaderboard;
+}
+
+/**
+ * Get the last updated date for FFTOW data
+ */
+function fftow_get_last_updated_date() {
+    global $wpdb;
+    global $ftotw_tweet_table_name;
+
+    $last_updated_on = $wpdb->get_var($wpdb->prepare("SELECT MAX(tweet_date) FROM $ftotw_tweet_table_name"));
+
+    return date('d-M-Y G:i:s', strtotime($last_updated_on));
 }
 ?>
