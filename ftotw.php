@@ -734,17 +734,32 @@ EOD;
 /*
  * Get the fftow river
  */
-function fftow_get_river($wing = 0) {
+function fftow_get_river($wing = 0, $month = 0, $year = 0) {
     global $wpdb;
     global $ftotw_tweet_table_name;
 
     $river = '';
     
-    if ($wing > 0 && $wing <= 4) {
-        $tweets = $wpdb->get_results("SELECT * FROM $ftotw_tweet_table_name WHERE wings = $wing ORDER BY tweet_date DESC");
-    } else {
-        $tweets = $wpdb->get_results("SELECT * FROM $ftotw_tweet_table_name ORDER BY wings DESC, tweet_date DESC");
+    $date_condition = '';
+    if ($month > 0 && $year > 0) {
+        $date_condition = " MONTH(tweet_date) = $month AND YEAR(tweet_date) = $year ";
     }
+
+    if ($wing > 0 && $wing <= 4) {
+        $query = "SELECT * FROM $ftotw_tweet_table_name WHERE wings = $wing ";
+        if ($date_condition != '') {
+            $query .= $date_condition;
+        }
+        $query .= " ORDER BY tweet_date DESC";
+    } else {
+        $query = "SELECT * FROM $ftotw_tweet_table_name " ; 
+        if ($date_condition != '') {
+            $query .= ' WHERE '. $date_condition;
+        }
+        $query .= " ORDER BY wings DESC, tweet_date DESC";
+    }
+
+    $tweets = $wpdb->get_results($query);
 
     if ($tweets) {
         $current_date = '';
