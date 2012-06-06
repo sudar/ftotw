@@ -674,7 +674,7 @@ class TweetHelper {
  * @global <type> $ftotw_tweet_table_name
  * @param <type> $wing
  */
-function fftow_get_timeline($wing = 0) {
+function ftotw_get_timeline($wing = 0) {
     global $wpdb;
     global $ftotw_tweet_table_name;
 
@@ -732,9 +732,9 @@ EOD;
 }
 
 /*
- * Get the fftow river
+ * Get the ftotw river
  */
-function fftow_get_river($wing = 0, $month = 0, $year = 0) {
+function ftotw_get_river($wing = 0, $month = 0, $year = 0) {
     global $wpdb;
     global $ftotw_tweet_table_name;
 
@@ -748,7 +748,7 @@ function fftow_get_river($wing = 0, $month = 0, $year = 0) {
     if ($wing > 0 && $wing <= 4) {
         $query = "SELECT * FROM $ftotw_tweet_table_name WHERE wings = $wing ";
         if ($date_condition != '') {
-            $query .= $date_condition;
+            $query .= ' AND ' . $date_condition;
         }
         $query .= " ORDER BY tweet_date DESC";
     } else {
@@ -793,7 +793,7 @@ function fftow_get_river($wing = 0, $month = 0, $year = 0) {
  * @global <type> $ftotw_tweet_table_name
  * @param <type> $wing
  */
-function fftow_get_leaderboard() {
+function ftotw_get_leaderboard() {
     global $wpdb;
     global $ftotw_table_name;
 
@@ -825,14 +825,27 @@ EOD;
 }
 
 /**
- * Get the last updated date for FFTOW data
+ * Get the last updated date for ftotw data
  */
-function fftow_get_last_updated_date() {
+function ftotw_get_last_updated_date() {
     global $wpdb;
     global $ftotw_tweet_table_name;
 
     $last_updated_on = $wpdb->get_var($wpdb->prepare("SELECT MAX(tweet_date) FROM $ftotw_tweet_table_name"));
 
     return date('d-M-Y G:i:s', strtotime($last_updated_on));
+}
+
+// get month from title
+function ftotw_get_month_from_title($title) {
+    $parts = explode(' ', $title);
+    $month = $parts[count($parts) - 3];
+    return date('m', strtotime($month . '-2012')); // small hack which I got from http://stackoverflow.com/a/9941819/24949
+}
+
+// get year from title
+function ftotw_get_year_from_title($title) {
+    $parts = explode(' ', $title);
+    return $parts[count($parts) - 1];
 }
 ?>
