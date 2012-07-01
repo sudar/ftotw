@@ -119,7 +119,7 @@ class Ftotw {
 
                     foreach ($tweets as $tweet) {
                         $tweet_text = $tweet->get_description();
-                        if (stripos($tweet_text, 'http') !== FALSE && stripos($tweet_text, '~') !== FALSE && (
+                        if (stripos($tweet_text, '~') !== FALSE && (
                                 stripos($tweet_text, 'insightful') !== FALSE ||
                                 stripos($tweet_text, 'brilliant') !== FALSE ||
                                 stripos($tweet_text, 'amazing') !== FALSE ||
@@ -146,11 +146,11 @@ class Ftotw {
                     // update since id
                     $this->update_since_id($tweets);
                 } else {
-                    $this->send_email("Zero tweets found. Either there are no tweets available or Twitter could be down. The Plugin will try to retrieve the tweents again. You don't have to do anything.");
+                    $this->send_email("Zero tweets found. Either there are no tweets available or Twitter could be down. The Plugin will try to retrieve the tweets again. You don't have to do anything.");
                     error_log("Zero entries found");
                 }
             } else {
-                $this->send_email("Error parsing the feed. Possible reason is that Twitter could be down. The Plugin will try to retrieve the tweents again. You don't have to do anything. The following is the log information for debugging. " . var_export($feed, TRUE));
+                $this->send_email("Error parsing the feed. Possible reason is that Twitter could be down. The Plugin will try to retrieve the tweets again. You don't have to do anything. The following is the log information for debugging. " . var_export($feed, TRUE));
                 error_log("Error parsing the feed" . var_export($feed, TRUE));
             }
         }
@@ -768,7 +768,6 @@ function ftotw_get_river($wing = 0, $month = 0, $year = 0) {
     }
 
     $tweets = $wpdb->get_results($query);
-error_log($query);
     if ($tweets) {
         $current_date = '';
         
