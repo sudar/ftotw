@@ -574,7 +574,7 @@ class TweetHelper {
 
     function get_processed_content() {
         
-        $tweet_content = $this->process_url($this->tweet->tweet);
+        $tweet_content = $this->process_url($this->tweet->tweet);        
         $tweet_content = $this->expand_twitter_name($tweet_content);
         $tweet_content = $this->add_permalink($tweet_content, 'http://twitter.com/rsukumar/statuses/' . $this->tweet->tweet_id);
 
@@ -615,9 +615,10 @@ class TweetHelper {
         if ( empty($url) )
             return $matches[0];
 
-        $ftotw_link_no = get_option('ftotw_link_no', 1);
-        update_option('ftotw_link_no', $ftotw_link_no + 1);
-        return $matches[1] . "<a href=\"$url\" >FTOTW Link $ftotw_link_no</a>" . $suffix;
+//        $ftotw_link_no = get_option('ftotw_link_no', 1);
+//        update_option('ftotw_link_no', $ftotw_link_no + 1);
+//        return $matches[1] . "<a href=\"$url\" >FTOTW Link $ftotw_link_no</a>" . $suffix;
+          return $matches[1] . "<a href=\"$url\" >$url</a>" . $suffix;
 
     }
 
@@ -660,7 +661,8 @@ class TweetHelper {
      *
      */
     function add_permalink($content, $permalink) {
-        $content = preg_replace("/(rsukumar)/", "<a href=\"$permalink\" target=\"_blank\">\\1</a>", $content);
+        $content = preg_replace("/(rsukumar: )/", " ", $content);
+        $content .= " - <a href=\"$permalink\" target=\"_blank\">Original Tweet</a>";
         return trim($content);
     }
 }
@@ -735,12 +737,18 @@ EOD;
  * Get the ftotw river
  */
 function ftotw_get_river($wing = 0, $month = 0, $year = 0) {
+
     global $wpdb;
     global $ftotw_tweet_table_name;
 
     $river = '';
-    
     $date_condition = '';
+
+    if ($wing == 0 && $month == 0 && $year == 0) {
+        $month = date('m');
+        $year  = date('Y');
+    }    
+
     if ($month > 0 && $year > 0) {
         $date_condition = " MONTH(tweet_date) = $month AND YEAR(tweet_date) = $year ";
     }
@@ -756,11 +764,11 @@ function ftotw_get_river($wing = 0, $month = 0, $year = 0) {
         if ($date_condition != '') {
             $query .= ' WHERE '. $date_condition;
         }
-        $query .= " ORDER BY wings DESC, tweet_date DESC";
+        $query .= " ORDER BY tweet_date DESC, wings DESC";
     }
 
     $tweets = $wpdb->get_results($query);
-
+error_log($query);
     if ($tweets) {
         $current_date = '';
         
@@ -839,13 +847,24 @@ function ftotw_get_last_updated_date() {
 // get month from title
 function ftotw_get_month_from_title($title) {
     $parts = explode(' ', $title);
-    $month = $parts[count($parts) - 3];
-    return date('m', strtotime($month . '-2012')); // small hack which I got from http://stackoverflow.com/a/9941819/24949
+    if (count($parts) != 3) {
+        return 0;
+    }
+
+    return intval($parts[0]);
+
+    //$month = $parts[count($parts) - 3];
+
+    //return date('m', strtotime($month . '-2012')); // small hack which I got from http://stackoverflow.com/a/9941819/24949
 }
 
 // get year from title
 function ftotw_get_year_from_title($title) {
     $parts = explode(' ', $title);
-    return $parts[count($parts) - 1];
+    if (count($parts) != 3) {
+        return 0;
+    }
+
+    return intval($parts[2]);
 }
 ?>
