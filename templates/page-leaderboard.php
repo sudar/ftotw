@@ -1,7 +1,7 @@
 <?php
 /*
-Template Name: Wing River
-Wing River page template
+Template Name: FTOTW Leaderboard
+FTOTW Leaderboard page template
 */
 ?>
 <?php get_header(); ?>
@@ -18,8 +18,8 @@ Wing River page template
 
 				<h2 id="post-<?php the_ID(); ?>"><?php the_title(); ?></h2>
 				<?php the_content(__('Continue reading this entry','fauna').' &raquo;'); ?>
-<?php if (function_exists('ftotw_get_river')) {echo ftotw_get_river(0, ftotw_get_month_from_title(get_the_title()), ftotw_get_year_from_title(get_the_title())); } ?>
-<?php if (function_exists('fftow_get_last_updated_date')) {echo '<p>Last updated on:', fftow_get_last_updated_date(), '</p>'; } ?>
+<?php if (function_exists('ftotw_get_leaderboard')) {echo ftotw_get_leaderboard(); } ?>
+<?php if (function_exists('ftotw_get_last_updated_date')) {echo '<p>Last updated on:', ftotw_get_last_updated_date(), '</p>'; } ?>
 				<?php wp_link_pages('before=<strong>'.__('Page:','fauna').' &after=</strong>&next_or_number=number&pagelink=%'); ?>
 				
 				
