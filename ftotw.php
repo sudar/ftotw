@@ -108,7 +108,7 @@ class Ftotw {
             $feed_url = $options['twitter-feed'];
             $since_id = get_option('ftotw-since-id', 1);
 //            $feed_url .= '?count=10';
-            $feed_url .= '?count=100&since_id=' . $since_id;
+            $feed_url .= '&count=100&since_id=' . $since_id;
 
             $feed = fetch_feed($feed_url);
 
