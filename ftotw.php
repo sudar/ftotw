@@ -835,8 +835,9 @@ EOD;
 function ftotw_get_table() {
 		global $wpdb, $ftotw_tweet_table_name;
 
-		$m = isset( $_GET['m'] ) ? (int) $_GET['m'] : 0;
+		$m = isset( $_GET['m'] ) ? (int) $_GET['m'] : date('Y') . date('m');
 		$level = isset( $_GET['level'] ) ? (int) $_GET['level'] : 0;
+		$twitter_id = isset( $_GET['contributor'] ) ? $_GET['contributor'] : "0";
 ?>
     <form action="" method="get" accept-charset="utf-8">
 <?php            
@@ -848,6 +849,13 @@ function ftotw_get_table() {
             <option value = "2" <?php echo selected($level, "2", false); ?> >Level 2</option>
             <option value = "3" <?php echo selected($level, "3", false); ?> >Level 3</option>
             <option value = "4" <?php echo selected($level, "4", false); ?> >Level 4</option>
+        </select>
+
+        <select name="contributor">
+            <option value = "0" <?php selected($twitter_id, "0"); ?>>All</option>
+<?php
+            ftotw_print_contributor_options($twitter_id);
+?>
         </select>
 
         <button type="submit">Filter</button>
@@ -865,7 +873,11 @@ function ftotw_get_table() {
             $query_cond .= " AND YEAR (tweet_date) = $year AND MONTH(tweet_date) = $month ";
         }
 
-        $tweets = $wpdb->get_results("SELECT * from $ftotw_tweet_table_name WHERE 1=1 $query_cond ");
+        if ($twitter_id != "0") {
+            $query_cond .= " AND twitter_id = '$twitter_id' ";
+        }
+        
+        $tweets = $wpdb->get_results("SELECT * from $ftotw_tweet_table_name WHERE 1=1 $query_cond ORDER BY tweet_date DESC");
 
         $content = "[table ai='1' tablesorter='1']\n Tweet|Wings|Contributor|Date\n";
         foreach ($tweets as $tweet) {
@@ -892,7 +904,7 @@ function ftotw_print_date_options() {
 		if ( !$month_count || ( 1 == $month_count && 0 == $months[0]->month ) )
 			return;
 
-		$m = isset( $_GET['m'] ) ? (int) $_GET['m'] : 0;
+		$m = isset( $_GET['m'] ) ? (int) $_GET['m'] : date('Y') . date('m');
 ?>
 		<select name='m'>
 			<option<?php selected( $m, 0 ); ?> value='0'><?php _e( 'Show all dates' ); ?></option>
@@ -914,6 +926,16 @@ function ftotw_print_date_options() {
 		</select>
 <?php
 }
+
+function ftotw_print_contributor_options($twitter_id) {
+    global $wpdb, $ftotw_tweet_table_name;
+
+    $contributors = $wpdb->get_results("SELECT DISTINCT(twitter_id) AS twitter_name FROM $ftotw_tweet_table_name ORDER BY twitter_id DESC ");
+    foreach ($contributors as $contributor) {
+        echo '<option value = "' . $contributor->twitter_name . '" ' . selected($twitter_id, $contributor->twitter_name, false) . '>' . $contributor->twitter_name . '</option>' ;
+    }
+}
+
 /**
  * Get the last updated date for ftotw data
  */
