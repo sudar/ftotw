@@ -4,13 +4,14 @@ Plugin Name: FTOTW
 Plugin URI: http://sudarmuthu.com/wordpress/
 Description: Automatically created posts from Twitter feed
 Author: Sudar
-Version: 0.2
+Version: 0.3
 Author URI: http://sudarmuthu.com/
 Text Domain: ftotw
 
 === RELEASE NOTES ===
 2011-05-14 - v0.1 - Initial Release
 2011-11-14 - v0.2 - Second Release
+2013-01-24 - v0.3 - Change the page templates
 */
 
 global $wpdb;
@@ -831,6 +832,88 @@ EOD;
     return $leaderboard;
 }
 
+function ftotw_get_table() {
+		global $wpdb, $ftotw_tweet_table_name;
+
+		$m = isset( $_GET['m'] ) ? (int) $_GET['m'] : 0;
+		$level = isset( $_GET['level'] ) ? (int) $_GET['level'] : 0;
+?>
+    <form action="" method="get" accept-charset="utf-8">
+<?php            
+            ftotw_print_date_options();
+?>
+        <select name="level" id="">
+            <option value = "0" <?php echo selected($level, "0", false); ?> >All Level</option>
+            <option value = "1" <?php echo selected($level, "1", false); ?> >Level 1</option>
+            <option value = "2" <?php echo selected($level, "2", false); ?> >Level 2</option>
+            <option value = "3" <?php echo selected($level, "3", false); ?> >Level 3</option>
+            <option value = "4" <?php echo selected($level, "4", false); ?> >Level 4</option>
+        </select>
+
+        <button type="submit">Filter</button>
+    </form>
+<?php    
+        $query_cond = "";
+
+        if ($level > 0 ) {
+            $query_cond = " AND wings = $level ";
+        }
+
+        if ($m != 0) {
+            $year = substr($m, 0, 4);
+            $month = substr($m, 4);
+            $query_cond .= " AND YEAR (tweet_date) = $year AND MONTH(tweet_date) = $month ";
+        }
+
+        $tweets = $wpdb->get_results("SELECT * from $ftotw_tweet_table_name WHERE 1=1 $query_cond ");
+
+        $content = "[table ai='1' tablesorter='1']\n Tweet|Wings|Contributor|Date\n";
+        foreach ($tweets as $tweet) {
+            $helper = new TweetHelper($tweet);
+            $tweet_content = $helper->get_processed_content();
+            $tweet_content = str_replace("|", "[PIPE]", $tweet_content);
+            $content .= trim(preg_replace('/\s+/', ' ', $tweet_content)) . '|' . $tweet->wings . '|' . $tweet->twitter_id . '|' . $tweet->tweet_date . "\n";
+        }
+
+        $content .= '[/table]';
+
+        echo str_replace("[PIPE]", "|", do_shortcode($content));
+}
+
+function ftotw_print_date_options() {
+		global $wpdb, $wp_locale, $ftotw_tweet_table_name;
+
+		$months = $wpdb->get_results( "SELECT DISTINCT YEAR( tweet_date ) AS year, MONTH( tweet_date ) AS month
+			FROM $ftotw_tweet_table_name
+			ORDER BY tweet_date DESC" );
+
+		$month_count = count( $months );
+
+		if ( !$month_count || ( 1 == $month_count && 0 == $months[0]->month ) )
+			return;
+
+		$m = isset( $_GET['m'] ) ? (int) $_GET['m'] : 0;
+?>
+		<select name='m'>
+			<option<?php selected( $m, 0 ); ?> value='0'><?php _e( 'Show all dates' ); ?></option>
+<?php
+		foreach ( $months as $arc_row ) {
+			if ( 0 == $arc_row->year )
+				continue;
+
+			$month = zeroise( $arc_row->month, 2 );
+			$year = $arc_row->year;
+
+			printf( "<option %s value='%s'>%s</option>\n",
+				selected( $m, $year . $month, false ),
+				esc_attr( $arc_row->year . $month ),
+				$wp_locale->get_month( $month ) . " $year"
+			);
+		}
+?>
+		</select>
+<?php
+}
 /**
  * Get the last updated date for ftotw data
  */
