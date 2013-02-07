@@ -805,37 +805,28 @@ function ftotw_get_leaderboard() {
     global $wpdb;
     global $ftotw_table_name;
 
-    $leaderboard = '';
+    $content = '';
 
     $tweeters = $wpdb->get_results("SELECT * FROM $ftotw_table_name ORDER BY wings DESC");
 
     if ($tweeters) {
-        $leaderboard .= <<<EOD
-        <table border = "1">
-            <tr>
-                <th>Author</th>
-                <th>Wings</th>
-            </tr>
-EOD;
+        $content .= "[table ai='1' tablesorter='1']\n Author|Wings\n";
 
         foreach ($tweeters as $tweeter) {
-
-            $leaderboard .= '<tr>';
-            $leaderboard .= '<td><a href = "http://twitter.com/' . $tweeter->twitter_id . '">' . $tweeter->twitter_id . '</a></td>';
-            $leaderboard .= '<td>' . $tweeter->wings . '</td>';
-            $leaderboard .= '</tr>';
+            $content .= '<a href = "http://twitter.com/' . $tweeter->twitter_id . '">' . $tweeter->twitter_id . '</a>|';
+            $content .= $tweeter->wings . "\n";
         }
 
-        $leaderboard .= '</table>';
+        $content .= '[/table]';
     }
 
-    return $leaderboard;
+    return do_shortcode($content);
 }
 
 function ftotw_get_table() {
 		global $wpdb, $ftotw_tweet_table_name;
 
-		$m = isset( $_GET['m'] ) ? (int) $_GET['m'] : date('Y') . date('m');
+		$m = isset( $_GET['mon'] ) ? (int) $_GET['mon'] : date('Y') . date('m');
 		$level = isset( $_GET['level'] ) ? (int) $_GET['level'] : 0;
 		$twitter_id = isset( $_GET['contributor'] ) ? $_GET['contributor'] : "0";
 ?>
@@ -904,9 +895,9 @@ function ftotw_print_date_options() {
 		if ( !$month_count || ( 1 == $month_count && 0 == $months[0]->month ) )
 			return;
 
-		$m = isset( $_GET['m'] ) ? (int) $_GET['m'] : date('Y') . date('m');
+		$m = isset( $_GET['mon'] ) ? (int) $_GET['mon'] : date('Y') . date('m');
 ?>
-		<select name='m'>
+		<select name='mon'>
 			<option<?php selected( $m, 0 ); ?> value='0'><?php _e( 'Show all dates' ); ?></option>
 <?php
 		foreach ( $months as $arc_row ) {
