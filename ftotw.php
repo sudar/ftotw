@@ -9,9 +9,9 @@ Author URI: http://sudarmuthu.com/
 Text Domain: ftotw
 
 === RELEASE NOTES ===
-2011-05-14 - v0.1 - Initial Release
-2011-11-14 - v0.2 - Second Release
-2013-01-24 - v0.3 - Change the page templates
+2011-05-14 - v1.0 - Initial Release
+2011-11-14 - v2.0 - Second Release
+2013-01-24 - v2.2 - Change the page templates
 */
 
 global $wpdb;
