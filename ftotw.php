@@ -4,7 +4,7 @@ Plugin Name: FTOTW
 Plugin URI: http://sudarmuthu.com/wordpress/
 Description: Automatically created posts from Twitter feed
 Author: Sudar
-Version: 0.3
+Version: 3.0
 Author URI: http://sudarmuthu.com/
 Text Domain: ftotw
 
@@ -12,6 +12,7 @@ Text Domain: ftotw
 2011-05-14 - v1.0 - Initial Release
 2011-11-14 - v2.0 - Second Release
 2013-01-24 - v2.2 - Change the page templates
+2013-01-24 - v3.0 - Added filtering
 */
 
 global $wpdb;
