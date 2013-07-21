@@ -4,7 +4,7 @@ Plugin Name: FTOTW
 Plugin URI: http://sudarmuthu.com/wordpress/
 Description: Automatically created posts from Twitter feed
 Author: Sudar
-Version: 3.0
+Version: 3.5
 Author URI: http://sudarmuthu.com/
 Text Domain: ftotw
 
@@ -13,6 +13,7 @@ Text Domain: ftotw
 2011-11-14 - v2.0 - Second Release
 2013-01-24 - v2.2 - Change the page templates
 2013-01-24 - v3.0 - Added filtering
+2013-07-06 - v3.5 - Added tweet page
 */
 
 global $wpdb;
@@ -41,7 +42,7 @@ class Ftotw {
 
         // Register hooks
         add_action('do_ftotw', array(&$this, 'do_ftotw'));
-        add_action('do_ftotw_fetch_tweets', array(&$this, 'do_ftotw_fetch_tweets'));
+        //add_action('do_ftotw_fetch_tweets', array(&$this, 'do_ftotw_fetch_tweets'));
         
         // Settings hooks
         add_action( 'admin_menu', array(&$this, 'register_settings_page') );
@@ -357,6 +358,7 @@ EOD;
         add_settings_field('footer-text', __('Footer Text', 'ftotw'), array(&$this, 'ft_footer_text_callback'), __FILE__, 'ft_global_section');
         add_settings_field('category', __('Category', 'ftotw'), array(&$this, 'ft_category_callback'), __FILE__, 'ft_global_section');
         add_settings_field('tags', __('Tags', 'ftotw'), array(&$this, 'ft_tags_callback'), __FILE__, 'ft_global_section');
+        add_settings_field('password', __('Password', 'ftotw'), array(&$this, 'ft_password_callback'), __FILE__, 'ft_global_section');
     }
 
     /**
@@ -478,6 +480,16 @@ EOD;
     function ft_tags_callback() {
         $options = get_option('ftotw-options');
         echo "<input id='tags' name='ftotw-options[tags]' size='50' type='text' value='{$options['tags']}' />";
+    }
+
+
+    /**
+      * Callback for password
+      *
+      */
+    function ft_password_callback() {
+        $options = get_option('ftotw-options');
+        echo "<input id='password' name='ftotw-options[password]' size='50' type='text' value='{$options['password']}' />";
     }
 
     function add_manual_run_section() {
