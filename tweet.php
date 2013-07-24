@@ -30,7 +30,7 @@ if (isset($_POST['submit'])) {
             }
         }
 
-        wp_redirect('https://twitter.com/intent/tweet?text=' . $tweet_text);
+        header ('Location: https://twitter.com/intent/tweet?text=' . $tweet_text);
         exit;
     }
 } else {
