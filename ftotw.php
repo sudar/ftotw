@@ -359,6 +359,7 @@ EOD;
         add_settings_field('category', __('Category', 'ftotw'), array(&$this, 'ft_category_callback'), __FILE__, 'ft_global_section');
         add_settings_field('tags', __('Tags', 'ftotw'), array(&$this, 'ft_tags_callback'), __FILE__, 'ft_global_section');
         add_settings_field('password', __('Password', 'ftotw'), array(&$this, 'ft_password_callback'), __FILE__, 'ft_global_section');
+        add_settings_field('to', __('Email', 'ftotw'), array(&$this, 'ft_email_callback'), __FILE__, 'ft_global_section');
     }
 
     /**
@@ -490,6 +491,14 @@ EOD;
     function ft_password_callback() {
         $options = get_option('ftotw-options');
         echo "<input id='password' name='ftotw-options[password]' size='50' type='text' value='{$options['password']}' />";
+    }
+
+    /**
+     * Callback for email
+     */
+    function ft_email_callback() {
+        $options = get_option('ftotw-options');
+        echo "<input id='email' name='ftotw-options[email]' size='50' type='text' value='{$options['email']}' />";
     }
 
     function add_manual_run_section() {

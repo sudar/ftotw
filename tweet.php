@@ -6,6 +6,8 @@ if (isset($_POST['submit'])) {
     $ftotw = new Ftotw();
 
     $options = get_option('ftotw-options');
+    $email = $options['email'];
+
     $current_password = $options['password'];
     $password = $_POST['password'];
 
@@ -30,7 +32,7 @@ if (isset($_POST['submit'])) {
             }
         }
 
-        header ('Location: https://twitter.com/intent/tweet?text=' . $tweet_text);
+        wp_mail( $email, 'FTOTW Tweet', $tweet_text );
         exit;
     }
 } else {
