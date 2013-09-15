@@ -601,7 +601,7 @@ class TweetHelper {
         $tweet_content = $this->expand_twitter_name($tweet_content);
         $tweet_content = $this->add_permalink($tweet_content, 'http://twitter.com/rsukumar/statuses/' . $this->tweet->tweet_id);
 
-        return $tweet_content;
+        return stripslashes($tweet_content);
     }
 
     /**

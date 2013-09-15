@@ -23,16 +23,16 @@ if (isset($_POST['submit'])) {
             $wing = $ftotw->get_wing($tweet_text);
 
             if ($wing > 0) {
-                $tweet_date = strtotime(trim($fields[1], '"'));
+                $tweet_date = time();
 
-                echo "Inserting tweet: $fields[0] <br>";
                 // update the db
-                $ftotw->insert_tweet($tweeter, trim($fields[0], '"'), $tweet_text, $wing, $tweet_date);
+                $ftotw->insert_tweet($tweeter, time(), $tweet_text, $wing, $tweet_date);
                 $ftotw->update_wing($tweeter, $wing, $tweet_date);
             }
         }
 
         wp_mail( $email, 'FTOTW Tweet', $tweet_text );
+        echo "The mail was successfully sent";
         exit;
     }
 } else {
